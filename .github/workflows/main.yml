@@ -1,11 +1,11 @@
-name: macos-sonoma-fix
+name: macos-sonoma-final-fix
 
 on:
   workflow_dispatch:
 
 jobs:
   macos-job:
-    # Artik macos-13 bitti, macos-14 (Sonoma) kullaniyoruz
+    # Artik macos-13 bitti, en stabil macos-14 (Sonoma) kullaniyoruz
     runs-on: macos-14
     steps:
       - name: Checkout Code
@@ -14,28 +14,29 @@ jobs:
       - name: MyData Klasorunu Hazirla
         run: |
           mkdir -p ~/Desktop/mydata
-          echo "Hatalar cozuldu, operasyon basladi!" > ~/Desktop/mydata/not.txt
+          echo "Hatalar ayiklandi kanka!" > ~/Desktop/mydata/not.txt
 
       - name: Setup Tailscale (Kesin Cozum)
         run: |
-          # Brew ile tertemiz kur
+          # Brew ile tertemiz kurulum yapiyoruz
           brew install tailscale
           
-          # Hata veren parametreleri sildik, yolu otomatik buluyoruz
+          # Hata veren --unattended parametresini sildik
+          # Yolu sistemden otomatik bulup baglaniyoruz
           TS_PATH=$(which tailscale)
           sudo $TS_PATH up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=macos-sonoma --accept-routes --accept-dns=false
           
-          echo "Baglanti basarili! IP:"
+          echo "Baglanti basarili! IP Adresin:"
           $TS_PATH ip -4
 
       - name: VNC ve Masaustu Hazirligi
         run: |
-          # VNC aktif etme
+          # VNC aktif etme ve sifre
           sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate -configure -access -on -clientopts -setvncpw -vncpw Ed0kaleen!2024 -restart -agent -privs -all
           
           brew install novnc websockify
           
-          # M1/M2/M3 yollarina tam uyumlu kopru
+          # M1/M2 yollarina tam uyumlu noVNC koprusu
           WEBSOCK_PATH=$(which websockify)
           nohup $WEBSOCK_PATH --web /opt/homebrew/share/novnc 6080 localhost:5900 > /dev/null 2>&1 &
 
