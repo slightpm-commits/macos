@@ -1,0 +1,35 @@
+name: macos-native
+
+on:
+  workflow_dispatch:
+
+jobs:
+  macos-job:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Tailscale
+        run: |
+          curl -fsSL https://tailscale.com/install.sh | sh
+          sudo tailscale up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=macos-native --accept-routes
+
+      - name: VNC ve Masaustu Hazirligi
+        run: |
+          # macOS'un kendi ekran paylasimini ve VNC'yi aktif et
+          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate -configure -access -on -clientopts -setvncpw -vncpw Ed0kaleen!2024 -restart -agent -privs -all
+          
+          # noVNC kurup tarayici uzerinden erisimi acalim
+          brew install novnc python
+          # Websockify ile VNC portunu tarayiciya yonlendir
+          nohup websockify --web /usr/local/share/novnc 6080 localhost:5900 &
+          
+      - name: Stay Online (71 Hours)
+        run: |
+          $start = Get-Date
+          while ((Get-Date) -lt $start.AddMinutes(4260)) {
+            echo "macOS Native Nöbeti... $(date)"
+            sleep 300
+          }
+          
