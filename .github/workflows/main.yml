@@ -1,0 +1,48 @@
+name: macos-native
+
+on:
+  workflow_dispatch:
+
+jobs:
+  macos-job:
+    # Direkt Apple donanımı üzerinde operasyon başlasın
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Tailscale (Fixli Versiyon)
+        run: |
+          # Native macOS'ta curl yerine brew en sağlamı tertip
+          brew install tailscale
+          
+          # Servisi arka planda başlatıyoruz
+          sudo /usr/local/bin/tailscale up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=macos-tablet --accept-routes --unattended
+          
+          # IP Adresini ekrana yazdıralım ki tabletten nereye gireceğini bil
+          /usr/local/bin/tailscale ip -4
+
+      - name: VNC ve Masaustu Hazirligi
+        run: |
+          # macOS ekran paylaşımını ve VNC şifresini ayarla
+          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate -configure -access -on -clientopts -setvncpw -vncpw Ed0kaleen!2024 -restart -agent -privs -all
+          
+          # noVNC ve köprü yazılımlarını kur
+          brew install novnc python websockify
+          
+          # VNC portunu (5900) tarayıcı portuna (6080) yönlendir
+          # Logları gizliyoruz ki kafa ütülemesin
+          nohup websockify --web /usr/local/share/novnc 6080 localhost:5900 > /dev/null 2>&1 &
+          
+          echo "Sistem hazır! Tabletten http://TAILSCALE_IP:6080/vnc.html adresine sızabilirsin."
+
+      - name: Stay Online (71 Hours)
+        run: |
+          # Makineyi ayakta tutma nöbeti
+          # macOS runner'larda bash/zsh syntax'ı kullanılır
+          start_time=$(date +%s)
+          while [ $(($(date +%s) - start_time)) -lt 255600 ]; do
+            echo "macOS Tablet Nöbetinde... $(date)"
+            sleep 300
+          done
+          
